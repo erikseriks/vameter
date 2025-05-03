@@ -6,3 +6,5 @@ Fast and inexpensive VA meter with visual scale, uptime and fan control
 - ADS1115
 - Oled display (2.42" 128x64)
 - Two thermistors
+
+To flash: Just run platformio (play button in CLion) and use usbasp.

@@ -1,10 +1,10 @@
 #include <uptime_formatter.h>
 #include <uptime.h>
-#include <U8glib.h>
+#include <U8g2lib.h>
 #include <PString.h>
 #include <ADS1115.h>
 
-U8GLIB_SSD1309_128X64 u8g(4, 5, 8, 7, 6); // SPI Com: SCK/SCL, MOSI/SDA, CS, DC, RES
+U8G2_SSD1309_128X64_NONAME0_F_4W_SW_SPI u8g2(U8G2_R0, /* clock=*/4, /* data=*/5, /* cs=*/8, /* dc=*/7, /* reset=*/6);
 ADS1115 adc0(ADS1115_DEFAULT_ADDRESS);
 
 constexpr int lineMaxLength = 78; // Underline indicator for VA
@@ -27,6 +27,10 @@ double fanPwmValue = 255;
 unsigned long fanControlTime = 0;
 double highestTemp = 1023.0;
 double avgTemperature = 1023.0;
+
+constexpr const uint8_t *FONT_BIG = u8g2_font_ncenR18_tf;
+constexpr const uint8_t *FONT_MEDIUM = u8g2_font_profont11_tf;
+constexpr const uint8_t *FONT_SMALL = u8g2_font_helvR08_te;
 
 double getVoltage() {
     // Read measurement values
@@ -87,20 +91,20 @@ void draw() {
     PString PVoltage(voltageString, sizeof(voltageString));
     if (abs(voltage) < 1) {
         PVoltage.print(round(voltage * 1000));
-        PVoltage.print(" mV");
+        PVoltage.print("mV");
     } else {
         PVoltage.print(voltage);
-        PVoltage.print(" V");
+        PVoltage.print("V");
     }
 
     // Current
     PString PCurrent(currentString, sizeof(currentString));
     if (abs(current) < 1) {
         PCurrent.print(round(current * 1000));
-        PCurrent.print(" mA");
+        PCurrent.print("mA");
     } else {
         PCurrent.print(current);
-        PCurrent.print(" A");
+        PCurrent.print("A");
     }
 
     // Watts
@@ -108,76 +112,77 @@ void draw() {
     constexpr double epsilon = 0.000001;
     if (abs(watts) < 0.001 - epsilon) {
         PWatts.print(round(watts * 1000000));
-        PWatts.print("uW");
+        PWatts.print(" uW");
     } else if (abs(watts) < 1.0 - epsilon) {
         PWatts.print(round(watts * 1000));
-        PWatts.print("mW");
+        PWatts.print(" mW");
     } else if (abs(watts) > 1000.0 + epsilon) {
         PWatts.print(watts / 1000);
-        PWatts.print("kW");
+        PWatts.print(" kW");
     } else {
         PWatts.print(watts);
-        PWatts.print("W");
+        PWatts.print(" W");
     }
 
     constexpr int underlineWidth = lineMaxLength + 2;
 
     // Draw strings and scale line
-    u8g.setFont(u8g_font_timR18);
+    u8g2.setFont(FONT_BIG);
 
-    u8g.drawStr(0, 20, voltageString);
-    u8g.drawBox(0, 25, lineWidth1, 2);
-    u8g.drawLine(underlineWidth, 25, underlineWidth, 29);
-    u8g.drawLine(0, 29, underlineWidth, 29);
+    u8g2.drawStr(0, 22, voltageString);
+    u8g2.drawBox(0, 25, lineWidth1, 2);
+    u8g2.drawLine(underlineWidth, 25, underlineWidth, 29);
+    u8g2.drawLine(0, 29, underlineWidth, 29);
 
-    u8g.drawStr(0, 54, currentString);
-    u8g.drawBox(0, 59, lineWidth2, 2);
-    u8g.drawLine(underlineWidth, 59, underlineWidth, 63);
-    u8g.drawLine(0, 63, underlineWidth, 63);
+    u8g2.drawStr(0, 56, currentString);
+    u8g2.drawBox(0, 59, lineWidth2, 2);
+    u8g2.drawLine(underlineWidth, 59, underlineWidth, 63);
+    u8g2.drawLine(0, 63, underlineWidth, 63);
 
-    // Set font for watts
-    u8g.setFont(u8g_font_helvR08);
-    // Draw string for watts
-    u8g.drawStr(86, 64, wattsString);
+    // Set font for watts and uptime title text
+    u8g2.setFont(FONT_SMALL);
 
     // Uptime
+    u8g2.drawUTF8(90, 8, "Ieslēgts");
+
+    // Draw string for watts
+    u8g2.drawStr(83, 64, wattsString);
+
     char d[8];
     char h[8];
     char m[8];
     char s[8];
     int textLineYPosition = 21;
 
-    u8g.drawStr(90, 8, "Uptime");
-
     // Set font for uptime counter
-    u8g.setFont(u8g_font_profont12);
+    u8g2.setFont(FONT_MEDIUM);
 
     if (uptime::getDays()) {
         PString upTimeStringD(d, sizeof(d));
         upTimeStringD.print(uptime::getDays());
         upTimeStringD.print("d");
-        u8g.drawStr(92, textLineYPosition, upTimeStringD);
+        u8g2.drawStr(92, textLineYPosition, upTimeStringD);
         textLineYPosition += 10;
     }
     if (uptime::getHours()) {
         PString upTimeStringH(h, sizeof(h));
         upTimeStringH.print(uptime::getHours());
         upTimeStringH.print(" h");
-        u8g.drawStr(92, textLineYPosition, upTimeStringH);
+        u8g2.drawStr(92, textLineYPosition, upTimeStringH);
         textLineYPosition += 10;
     }
     if (uptime::getMinutes()) {
         PString upTimeStringM(m, sizeof(m));
         upTimeStringM.print(uptime::getMinutes());
         upTimeStringM.print(" min");
-        u8g.drawStr(92, textLineYPosition, upTimeStringM);
+        u8g2.drawStr(92, textLineYPosition, upTimeStringM);
         textLineYPosition += 10;
     }
     if (uptime::getSeconds()) {
         PString upTimeStringS(s, sizeof(s));
         upTimeStringS.print(uptime::getSeconds());
         upTimeStringS.print(" s");
-        u8g.drawStr(92, textLineYPosition, upTimeStringS);
+        u8g2.drawStr(92, textLineYPosition, upTimeStringS);
     }
 }
 
@@ -189,8 +194,10 @@ void setup() {
     analogReference(INTERNAL);
 
     // Display
-    u8g.sleepOn();
-    u8g.setColorIndex(1);
+    u8g2.begin();
+    u8g2.enableUTF8Print();
+    u8g2.clearBuffer();
+    u8g2.sendBuffer();
 
     // ADS1115
     Wire.begin();
@@ -228,8 +235,7 @@ void loop() {
     uptime::calculateUptime();
 
     // Draw a picture loop by 8bit lines
-    u8g.firstPage();
-    do {
-        draw();
-    } while (u8g.nextPage());
+    u8g2.clearBuffer();
+    draw();
+    u8g2.sendBuffer();
 }
